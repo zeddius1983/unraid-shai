@@ -42,6 +42,28 @@ jobs:
           # Update version inside PLG file
           sed -i "s/<!ENTITY version   \".*\">/<!ENTITY version   \"${VERSION}\">/" shai.plg
 
+      - name: Commit artifact to main (archive/)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Switch from detached tag checkout to main
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          # Bring the built outputs into main working tree
+          # archive/ and *.txz are ignored in your .gitignore, so force-add is required.
+          git add -f "archive/shai-${VERSION}.txz" shai.plg
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: publish archive shai-${VERSION}.txz"
+          git push origin main
+
       - name: Create GitHub Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:

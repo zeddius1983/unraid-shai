@@ -5,7 +5,7 @@
 <!ENTITY version   "2026.02.21">
 <!ENTITY launch    "Settings/shai">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
-<!ENTITY github    "YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME">
+<!ENTITY github    "zeddius1983/unraid-shai">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/shai.plg">
 ]>
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" icon="terminal">
