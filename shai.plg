@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "shai">
 <!ENTITY author    "zeddius1983">
-<!ENTITY version   "2026.02.21a">
+<!ENTITY version   "2026.02.21b">
 <!ENTITY launch    "Settings/shai">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "zeddius1983/unraid-shai">
