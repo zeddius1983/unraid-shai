@@ -29,12 +29,12 @@ if [ -n "$BASH_VERSION" ] && [ -n "$PS1" ]; then
         local current_point="$READLINE_POINT"
         
         # Call shai for autocomplete
-        # Note: We output a carriage return/newline manually if we want to show a status,
-        # but to keep it clean we just block.
         local new_line
         new_line=$(/usr/local/bin/shai --autocomplete "$current_line" "$current_point" 2>/dev/null)
         
         if [ $? -eq 0 ] && [ -n "$new_line" ]; then
+            # Strip trailing newlines just in case
+            new_line=$(echo "$new_line" | tr -d '\r\n')
             READLINE_LINE="$new_line"
             READLINE_POINT=${#READLINE_LINE}
         fi

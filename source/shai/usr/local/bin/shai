@@ -20,9 +20,8 @@ get_context() {
 
 clean_response() {
     local resp="$1"
-    # Remove markdown code blocks if the AI includes them
-    resp=$(echo "$resp" | sed -E 's/^```[a-zA-Z]*//')
-    resp=$(echo "$resp" | sed -E 's/```$//')
+    # Remove markdown code blocks if the AI includes them (specifically '```bash' or just '```')
+    resp=$(echo "$resp" | sed -E '/^```[a-zA-Z]*/d' | sed -E '/^```$/d')
     # Trim leading/trailing whitespace
     resp=$(echo "$resp" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
     echo "$resp"
@@ -88,7 +87,7 @@ $CONTEXT"
         # Ollama API
         PAYLOAD=$(jq -n --arg sys "$SYSTEM_PROMPT" --arg user "$USER_PROMPT" --arg model "$MODEL" '{model: $model, system: $sys, prompt: $user, stream: false}')
         RESPONSE=$(curl -s -X POST "$API_URL" -H "Content-Type: application/json" -d "$PAYLOAD")
-        echo "$RESPONSE" | jq -r -e '.response // empty' || echo "API Error: $RESPONSE"
+        MD_OUTPUT=$(echo "$RESPONSE" | jq -r -e '.response // empty' || echo "API Error: $RESPONSE")
     else
         # OpenAI API
         PAYLOAD=$(jq -n --arg sys "$SYSTEM_PROMPT" --arg user "$USER_PROMPT" --arg model "$MODEL" '{model: $model, messages: [{role: "system", content: $sys}, {role: "user", content: $user}], temperature: 0.7}')
@@ -97,6 +96,26 @@ $CONTEXT"
             HEADERS+=("-H" "Authorization: Bearer $API_KEY")
         fi
         RESPONSE=$(curl -s -X POST "$API_URL" "${HEADERS[@]}" -d "$PAYLOAD")
-        echo "$RESPONSE" | jq -r -e '.choices[0].message.content // empty' || echo "API Error: $RESPONSE"
+        MD_OUTPUT=$(echo "$RESPONSE" | jq -r -e '.choices[0].message.content // empty' || echo "API Error: $RESPONSE")
+    fi
+
+    echo -ne "\033[2K\r" # Clear the "Thinking..." line
+    
+    # Try to use a markdown renderer if available, else plain text with basic coloring
+    if command -v glow >/dev/null 2>&1; then
+        echo "$MD_OUTPUT" | glow -
+    elif command -v mdcat >/dev/null 2>&1; then
+        echo "$MD_OUTPUT" | mdcat
+    else
+        # Basic fallback: Add a little color to code blocks
+        echo "$MD_OUTPUT" | awk '
+            /^```/ { 
+                in_code = !in_code; 
+                if (in_code) print "\033[1;36m"; # Cyan for code
+                else print "\033[0m";            # Reset
+                next 
+            }
+            { print }
+        '
     fi
 fi
