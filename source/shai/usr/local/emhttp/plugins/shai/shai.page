@@ -23,8 +23,8 @@ if (file_exists($cfg_file)) {
     <h2>AI History Settings</h2>
 </div>
 
-<form markdown="1" method="POST" action="/update.htm" target="progressFrame">
-<input type="hidden" name="#file" value="<?=$cfg_file?>">
+<form markdown="1" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="shai/settings.cfg">
 
 <b>AI API URL:</b>
 : <input type="text" name="API_URL" value="<?=$API_URL?>" size="60">
