@@ -30,6 +30,7 @@ if (file_exists($cfg_file)) {
 : <input type="text" name="API_URL" value="<?=$API_URL?>" size="60">
 > *For Ollama:* `http://YOUR_SERVER_IP:11434/api/generate`
 > *For OpenAI:* `https://api.openai.com/v1/chat/completions`
+> *For OpenRouter:* `https://openrouter.ai/api/v1/chat/completions`
 
 <b>API Key:</b>
 : <input type="password" name="API_KEY" value="<?=$API_KEY?>" size="60" placeholder="Optional">
