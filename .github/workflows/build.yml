@@ -1,0 +1,63 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'source/**'
+      - 'build.sh'
+      - 'shai.plg'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Plugin Archive
+        run: |
+          # Make sure the build script is executable
+          chmod +x build.sh
+          
+          # Run the build script to generate shai.txz
+          ./build.sh
+          
+          # Create archive directory
+          mkdir -p archive
+          
+          # Get the current version date
+          VERSION=$(date +"%Y.%m.%d")
+          
+          # Move and rename the final txz package
+          mv shai.txz "archive/shai-${VERSION}.txz"
+          
+          # Calculate the MD5 checksum of the new archive
+          MD5=$(md5sum "archive/shai-${VERSION}.txz" | awk '{print $1}')
+          
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "MD5=${MD5}" >> $GITHUB_ENV
+          
+          # Update the version tag in the PLG file
+          sed -i "s/<!ENTITY version   \".*\">/<!ENTITY version   \"${VERSION}\">/" shai.plg
+          
+          # Since Unraid natively handles MD5 verification if we append it to the URL tag as an attribute:
+          # Let's ensure the URL is clean. We can add MD5 checks in the PLG, but for now just updating the version is enough
+          # to point the PLG's <URL> tag to the dynamically named .txz file since the entity replaces it!
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Auto-build plugin archive for version ${{ env.VERSION }}"
+          file_pattern: "archive/* shai.plg"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"

@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Default settings
+API_URL="http://localhost:11434/api/generate"
+API_KEY=""
+MODEL="llama3"
+
+SETTINGS_FILE="/boot/config/plugins/shai/settings.cfg"
+if [ -f "$SETTINGS_FILE" ]; then
+    source "$SETTINGS_FILE"
+fi
+
+get_context() {
+    # Fetch recent history from the persistent file
+    local hist_file="/boot/config/plugins/shai/.bash_history"
+    if [ -f "$hist_file" ]; then
+        tail -n 30 "$hist_file" 2>/dev/null
+    fi
+}
+
+clean_response() {
+    local resp="$1"
+    # Remove markdown code blocks if the AI includes them
+    resp=$(echo "$resp" | sed -E 's/^```[a-zA-Z]*//')
+    resp=$(echo "$resp" | sed -E 's/```$//')
+    # Trim leading/trailing whitespace
+    resp=$(echo "$resp" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    echo "$resp"
+}
+
+if [[ "$1" == "--autocomplete" ]]; then
+    LINE="$2"
+    POINT="$3"
+    CONTEXT=$(get_context)
+
+    PROMPT="You are a bash shell autocomplete AI for an Unraid server. 
+The user is currently typing a command. Provide the FULL completed command line. 
+ONLY output the exact completed command, with NO markdown backticks, NO quotes, NO explanations.
+Recent history for context:
+$CONTEXT
+Current line: $LINE"
+
+    if [[ "$API_URL" == *"api/generate"* ]]; then
+        # Ollama API
+        PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" '{model: $model, prompt: $prompt, stream: false}')
+        RESPONSE=$(curl -s -X POST "$API_URL" -H "Content-Type: application/json" -d "$PAYLOAD")
+        COMPLETION=$(echo "$RESPONSE" | jq -r -e '.response // empty')
+    else
+        # OpenAI API (or compatible like Groq, Anthropic requires different structure but we assume OpenAI compat here)
+        PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" '{model: $model, messages: [{role: "system", content: $prompt}], temperature: 0.1}')
+        HEADERS=("-H" "Content-Type: application/json")
+        if [ -n "$API_KEY" ]; then
+            HEADERS+=("-H" "Authorization: Bearer $API_KEY")
+        fi
+        RESPONSE=$(curl -s -X POST "$API_URL" "${HEADERS[@]}" -d "$PAYLOAD")
+        COMPLETION=$(echo "$RESPONSE" | jq -r -e '.choices[0].message.content // empty')
+    fi
+    
+    COMPLETION=$(clean_response "$COMPLETION")
+    
+    if [ -n "$COMPLETION" ]; then
+        echo "$COMPLETION"
+        exit 0
+    else
+        exit 1
+    fi
+else
+    # Direct advice mode
+    USER_PROMPT="$1"
+    if [ -z "$USER_PROMPT" ]; then
+        echo "shai - Shell AI Advisor for Unraid"
+        echo "Usage: shai \"your question here\""
+        echo "       (Auto-complete is bound to Ctrl+N in the shell)"
+        exit 1
+    fi
+
+    CONTEXT=$(get_context)
+    SYSTEM_PROMPT="You are an expert Unraid and Linux bash shell advisor.
+The user is asking a question about a command or issue. 
+Provide a clear, concise, and accurate bash command to solve their problem. 
+If explaining, keep the explanation brief.
+Here is the user's recent command history for context:
+$CONTEXT"
+
+    echo "Thinking..."
+
+    if [[ "$API_URL" == *"api/generate"* ]]; then
+        # Ollama API
+        PAYLOAD=$(jq -n --arg sys "$SYSTEM_PROMPT" --arg user "$USER_PROMPT" --arg model "$MODEL" '{model: $model, system: $sys, prompt: $user, stream: false}')
+        RESPONSE=$(curl -s -X POST "$API_URL" -H "Content-Type: application/json" -d "$PAYLOAD")
+        echo "$RESPONSE" | jq -r -e '.response // empty' || echo "API Error: $RESPONSE"
+    else
+        # OpenAI API
+        PAYLOAD=$(jq -n --arg sys "$SYSTEM_PROMPT" --arg user "$USER_PROMPT" --arg model "$MODEL" '{model: $model, messages: [{role: "system", content: $sys}, {role: "user", content: $user}], temperature: 0.7}')
+        HEADERS=("-H" "Content-Type: application/json")
+        if [ -n "$API_KEY" ]; then
+            HEADERS+=("-H" "Authorization: Bearer $API_KEY")
+        fi
+        RESPONSE=$(curl -s -X POST "$API_URL" "${HEADERS[@]}" -d "$PAYLOAD")
+        echo "$RESPONSE" | jq -r -e '.choices[0].message.content // empty' || echo "API Error: $RESPONSE"
+    fi
+fi

@@ -1,0 +1,53 @@
+Menu="Settings"
+Title="AI History"
+Icon="terminal"
+---
+<?php
+$plugin = "shai";
+$cfg_file = "/boot/config/plugins/$plugin/settings.cfg";
+
+// Default settings
+$API_URL = "http://localhost:11434/api/generate";
+$API_KEY = "";
+$MODEL = "llama3";
+
+if (file_exists($cfg_file)) {
+    $cfg = parse_ini_file($cfg_file);
+    if (isset($cfg['API_URL'])) $API_URL = $cfg['API_URL'];
+    if (isset($cfg['API_KEY'])) $API_KEY = $cfg['API_KEY'];
+    if (isset($cfg['MODEL']))   $MODEL   = $cfg['MODEL'];
+}
+?>
+
+<div class="title" style="margin-top: 20px;">
+    <h2>AI History Settings</h2>
+</div>
+
+<form markdown="1" method="POST" action="/update.htm" target="progressFrame">
+<input type="hidden" name="#file" value="<?=$cfg_file?>">
+
+<b>AI API URL:</b>
+: <input type="text" name="API_URL" value="<?=$API_URL?>" size="60">
+> *For Ollama:* `http://YOUR_SERVER_IP:11434/api/generate`
+> *For OpenAI:* `https://api.openai.com/v1/chat/completions`
+
+<b>API Key:</b>
+: <input type="password" name="API_KEY" value="<?=$API_KEY?>" size="60" placeholder="Optional">
+> *Leave empty if using a local Ollama instance without authentication.*
+
+<b>Model:</b>
+: <input type="text" name="MODEL" value="<?=$MODEL?>" size="60">
+> *Example:* `llama3` *or* `gpt-4o-mini`
+
+&nbsp;
+: <input type="submit" name="#apply" value="Apply" class="bb">
+</form>
+
+<div class="title" style="margin-top: 40px;">
+    <h2>Usage Instructions</h2>
+</div>
+<div markdown="1">
+*   **Persistent History:** Your bash history is now automatically preserved across reboots and different SSH sessions.
+*   **Shell Autocomplete:** Type part of a command and press `Ctrl+N` to ask the AI to complete it based on your history.
+*   **Advisor:** Run `shai "your question"` in the terminal to get command-line advice (avoids modifying the shell buffer).
+</div>

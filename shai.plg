@@ -1,0 +1,52 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "shai">
+<!ENTITY author    "zeddius1983">
+<!ENTITY version   "2026.02.21">
+<!ENTITY launch    "Settings/shai">
+<!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
+<!ENTITY github    "YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/shai.plg">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" icon="terminal">
+
+<CHANGES>
+###2026.02.21
+- Initial Release
+</CHANGES>
+
+<!-- The .txz package downloaded from GitHub or placed locally -->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;.txz</URL>
+</FILE>
+
+<FILE Run="/bin/bash">
+<INLINE>
+# Ensure settings directory exists
+mkdir -p /boot/config/plugins/&name;
+
+echo ""
+echo "----------------------------------------------------"
+echo " AI History &amp; Autocomplete has been installed."
+echo " Please navigate to Settings -> AI History in the Unraid WebUI to configure your API Key."
+echo "----------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+removepkg &name;-&version;
+rm -rf &plugdir;
+rm -f /etc/profile.d/shai.sh
+# Intentionally keeping /boot/config/plugins/shai so history and settings aren't lost on uninstall
+echo ""
+echo "----------------------------------------------------"
+echo " AI History has been removed."
+echo " (Your history and settings were kept in /boot/config/plugins/&name;)"
+echo "----------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+</PLUGIN>
