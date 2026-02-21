@@ -59,5 +59,6 @@ jobs:
         with:
           commit_message: "chore: Auto-build plugin archive for version ${{ env.VERSION }}"
           file_pattern: "archive/* shai.plg"
+          add_options: '--force'
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
