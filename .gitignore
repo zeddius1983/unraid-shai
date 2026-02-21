@@ -3,5 +3,10 @@ archive/
 *.txz
 *.md5
 
+# BUT allow tracked releases inside archive
+!archive/**
+!archive/*.txz
+!archive/*.md5
+
 # temporary files
 .tmp/
